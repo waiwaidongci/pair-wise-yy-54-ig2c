@@ -10,6 +10,8 @@ const stats = computed(() => [
   { label: '施工阶段', value: store.scheme.stages.length, note: '跨 42 天' },
   { label: '生效冲突', value: store.conflicts.filter((item) => item.level === '高').length, note: '需阶段审批前解决' },
   { label: '待处理条件', value: store.scheme.comments.filter((item) => item.status === '待处理').length, note: '公交单位尚有 1 条' },
+  { label: '当前修订', value: store.currentRevision?.id ?? '—', note: store.currentRevision?.label ?? '未绑定修订' },
+  { label: '未重确认意见', value: store.unreconfirmedComments.length, note: '受变更影响需重确认' },
   { label: '方案版本', value: `v${result.value?.scheme?.version ?? store.scheme.version}`, note: '每次几何修改留痕' },
 ])
 </script>
@@ -19,6 +21,18 @@ const stats = computed(() => [
   <a-spin :loading="loading" style="width:100%">
     <a-alert v-if="error" type="error" title="GraphQL 请求异常，已使用本地草案" class="mb16" />
     <div class="metrics"><article v-for="item in stats" :key="item.label" class="card metric"><span>{{ item.label }}</span><strong>{{ item.value }}</strong><small>{{ item.note }}</small></article></div>
+
+    <article class="card revision-banner">
+      <div class="panel-head"><div><h2>当前道路修订</h2><p>施工阶段、会签意见与公开通告绑定到同一条修订</p></div><a-tag color="blue">{{ store.currentRevision?.id }}</a-tag></div>
+      <p class="revision-label">{{ store.currentRevision?.label }}</p>
+      <p class="revision-meta">基于 {{ store.currentRevision?.basedOn ?? '—' }} · 触发 {{ store.currentRevision?.trigger }} · 受影响单位：{{ store.currentRevision?.affectedUnits.length ? store.currentRevision.affectedUnits.join('、') : '无' }}</p>
+      <div v-if="store.unreconfirmedComments.length" class="unreconfirmed-banner">
+        <a-tag color="orange">{{ store.unreconfirmedComments.length }} 条意见待重确认</a-tag>
+        <span>涉及阶段：{{ store.unreconfirmedStages.map((s) => s.id).join('、') }}</span>
+        <a-button size="mini" type="text" @click="$router.push('/review')">前往会签重确认</a-button>
+      </div>
+    </article>
+
     <div class="grid-2">
       <article class="card">
         <div class="panel-head"><div><h2>施工阶段时间轴</h2><p>点击阶段查看范围与道路占用</p></div><a-tag color="orange">42 天计划</a-tag></div>
@@ -35,6 +49,6 @@ const stats = computed(() => [
 </template>
 
 <style scoped>
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}.metric{padding:17px;border-left:4px solid #2563eb}.metric span,.metric small{display:block;color:#667085}.metric strong{display:block;font-size:29px;margin:7px 0 2px}.grid-2{display:grid;grid-template-columns:1.4fr .8fr;gap:16px}.panel-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.panel-head h2{font-size:17px;margin:0 0 4px}.panel-head p{color:#7a8798;font-size:13px;margin:0}.conflict{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:9px;border-radius:6px}.conflict.red{background:#fff1f2;border-left:3px solid #e11d48}.conflict.amber{background:#fff7ed;border-left:3px solid #f59e0b}.conflict>div{min-width:210px}.conflict b,.conflict small{display:block}.conflict small{color:#7a8798;margin-top:3px}.conflict p{width:100%;margin:0;color:#475569}.mt16{margin-top:16px}.agency-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.agency{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #e7ebf1;border-radius:7px}.agency>span{display:grid;place-items:center;width:35px;height:35px;border-radius:7px;background:#eff6ff;color:#2563eb;font-weight:800}.agency b,.agency small{display:block}.agency small{color:#7a8798;margin-top:3px}.agency>div{flex:1}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}.metric{padding:17px;border-left:4px solid #2563eb}.metric span,.metric small{display:block;color:#667085}.metric strong{display:block;font-size:29px;margin:7px 0 2px}.revision-banner{margin-bottom:16px}.revision-label{margin:6px 0 2px;font-size:15px;color:#1d2939}.revision-meta{margin:0;color:#7a8798;font-size:12px}.unreconfirmed-banner{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px}.unreconfirmed-banner span{color:#9a3412;font-size:13px}.grid-2{display:grid;grid-template-columns:1.4fr .8fr;gap:16px}.panel-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}.panel-head h2{font-size:17px;margin:0 0 4px}.panel-head p{color:#7a8798;font-size:13px;margin:0}.conflict{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:9px;border-radius:6px}.conflict.red{background:#fff1f2;border-left:3px solid #e11d48}.conflict.amber{background:#fff7ed;border-left:3px solid #f59e0b}.conflict>div{min-width:210px}.conflict b,.conflict small{display:block}.conflict small{color:#7a8798;margin-top:3px}.conflict p{width:100%;margin:0;color:#475569}.mt16{margin-top:16px}.agency-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.agency{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #e7ebf1;border-radius:7px}.agency>span{display:grid;place-items:center;width:35px;height:35px;border-radius:7px;background:#eff6ff;color:#2563eb;font-weight:800}.agency b,.agency small{display:block}.agency small{color:#7a8798;margin-top:3px}.agency>div{flex:1}
 @media(max-width:1050px){.metrics,.agency-grid{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}}@media(max-width:600px){.metrics,.agency-grid{grid-template-columns:1fr}}
 </style>
